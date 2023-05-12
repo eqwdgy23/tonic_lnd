@@ -95,6 +95,10 @@ pub type PeersClient =
 pub type VersionerClient =
     verrpc::versioner_client::VersionerClient<InterceptedService<Channel, MacaroonInterceptor>>;
 
+/// Convenience type alias for router service client.
+pub type RouterClient =
+    routerrpc::router_client::RouterClient<InterceptedService<Channel, MacaroonInterceptor>>;
+
 // Convenience type alias for signer client.
 pub type SignerClient = signrpc::signer_client::SignerClient<InterceptedService<Channel, MacaroonInterceptor>>;
 
@@ -108,6 +112,7 @@ pub struct Client {
     signer: SignerClient,
     peers: PeersClient,
     version: VersionerClient,
+    router: RouterClient,
 }
 
 impl Client {
@@ -134,6 +139,11 @@ impl Client {
     /// Returns the peers client.
     pub fn peers(&mut self) -> &mut PeersClient {
         &mut self.peers
+    }
+
+    /// Returns the router client.
+    pub fn router(&mut self) -> &mut RouterClient {
+        &mut self.router
     }
 }
 
@@ -173,6 +183,10 @@ pub mod verrpc {
 
 pub mod peersrpc {
     tonic::include_proto!("peersrpc");
+}
+
+pub mod routerrpc {
+    tonic::include_proto!("routerrpc");
 }
 
 /// Supplies requests with macaroon
@@ -231,7 +245,8 @@ pub async fn connect<A, CP, MP>(address: A, cert_file: CP, macaroon_file: MP) ->
             interceptor.clone(),
         ),
         version: verrpc::versioner_client::VersionerClient::with_interceptor(conn.clone(), interceptor.clone()),
-        signer: signrpc::signer_client::SignerClient::with_interceptor(conn, interceptor),
+        signer: signrpc::signer_client::SignerClient::with_interceptor(conn.clone(), interceptor.clone()),
+        router: routerrpc::router_client::RouterClient::with_interceptor(conn, interceptor),
     };
     Ok(client)
 }
